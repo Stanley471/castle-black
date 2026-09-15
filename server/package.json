@@ -1,15 +1,22 @@
 {
-  "name": "server",
+  "name": "castle-black-server",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Authoritative game arbiter and Stellar escrow resolver for Castle Black",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "nodemon --watch src --exec ts-node src/index.ts"
   },
-  "keywords": [],
+  "keywords": [
+    "chess",
+    "stellar",
+    "soroban",
+    "socket.io",
+    "express"
+  ],
   "author": "",
-  "license": "ISC",
-  "type": "commonjs",
+  "license": "MIT",
   "dependencies": {
     "@stellar/stellar-sdk": "^17.1.0",
     "chess.js": "^1.4.0",
