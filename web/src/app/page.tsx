@@ -14,7 +14,9 @@ import {
   Wallet,
   Sparkles,
   Zap,
-  Info
+  Info,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { connectSocket } from '@/lib/socket';
 import { getFreighterPublicKey, truncateAddress } from '@/lib/stellar';
@@ -42,6 +44,13 @@ export default function LobbyPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [joinError, setJoinError] = useState('');
 
+  // Toast feedback state
+  const [toast, setToast] = useState<{
+    title: string;
+    description?: string;
+    type: 'loading' | 'success' | 'error';
+  } | null>(null);
+
   // Auto-connect wallet handler
   const handleConnectWallet = async () => {
     setIsConnectingWallet(true);
@@ -56,8 +65,27 @@ export default function LobbyPage() {
   };
 
   const handleCreateRoom = () => {
+    if (isCreating) return; // Strictly prevent multiple clicks
     setIsCreating(true);
+
+    setToast({
+      title: 'Creating match room...',
+      description: 'Connecting to arbiter server and allocating 6-character room code.',
+      type: 'loading',
+    });
+
     const socket = connectSocket();
+
+    // Timeout safety fallback
+    const timeout = setTimeout(() => {
+      setIsCreating(false);
+      setToast({
+        title: 'Connection timeout',
+        description: 'Server took too long to respond. Please ensure the backend is running.',
+        type: 'error',
+      });
+      setTimeout(() => setToast(null), 4000);
+    }, 8000);
 
     socket.emit('create_room', {
       timeControlMs: selectedTime.ms,
@@ -70,13 +98,27 @@ export default function LobbyPage() {
     });
 
     socket.once('room_created', (data: RoomCreatedPayload) => {
-      setIsCreating(false);
-      router.push(`/game/${data.roomId}`);
+      clearTimeout(timeout);
+      setToast({
+        title: 'Match created!',
+        description: `Room code ${data.roomId} allocated. Redirecting to board...`,
+        type: 'success',
+      });
+      setTimeout(() => {
+        setIsCreating(false);
+        router.push(`/game/${data.roomId}`);
+      }, 400);
     });
 
     socket.once('error_message', (err: { message: string }) => {
+      clearTimeout(timeout);
       setIsCreating(false);
-      alert(err.message || 'Failed to create room');
+      setToast({
+        title: 'Failed to create room',
+        description: err.message || 'An unexpected error occurred.',
+        type: 'error',
+      });
+      setTimeout(() => setToast(null), 4000);
     });
   };
 
@@ -281,10 +323,19 @@ export default function LobbyPage() {
             <button
               onClick={handleCreateRoom}
               disabled={isCreating}
-              className="w-full mt-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/20 active:scale-[0.99] cursor-pointer disabled:opacity-50"
+              className="w-full mt-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/20 active:scale-[0.99] cursor-pointer disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-60"
             >
-              <Zap className="w-4 h-4 fill-zinc-950" />
-              <span>{isCreating ? 'Creating Room...' : 'Create Match & Get Code'}</span>
+              {isCreating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-zinc-950" />
+                  <span>Creating Match...</span>
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 fill-zinc-950" />
+                  <span>Create Match & Get Code</span>
+                </>
+              )}
             </button>
           </div>
 
@@ -367,6 +418,35 @@ export default function LobbyPage() {
           </a>
         </div>
       </main>
+
+      {/* Real-time Toast Feedback */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-zinc-900/95 border border-zinc-700/80 text-zinc-100 px-4 py-3 rounded-2xl shadow-2xl backdrop-blur-md transition-all animate-in fade-in slide-in-from-bottom-4 duration-300 max-w-sm">
+          <div
+            className={`p-2 rounded-xl shrink-0 ${
+              toast.type === 'loading'
+                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                : toast.type === 'success'
+                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+            }`}
+          >
+            {toast.type === 'loading' ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : toast.type === 'success' ? (
+              <Check className="w-4 h-4" />
+            ) : (
+              <AlertCircle className="w-4 h-4" />
+            )}
+          </div>
+          <div>
+            <div className="text-xs font-semibold text-zinc-100">{toast.title}</div>
+            {toast.description && (
+              <div className="text-[11px] text-zinc-400 mt-0.5 leading-snug">{toast.description}</div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
