@@ -12,6 +12,7 @@ out/
 
 # Rust / Soroban Smart Contracts
 target/
+test_snapshots/
 
 # Environment Variables & Secrets
 .env
