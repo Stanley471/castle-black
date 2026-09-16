@@ -2,8 +2,7 @@
 
 Minimal, production-grade 2-player escrow smart contract implemented in Rust for the Stellar network using Soroban SDK.
 
-## Product Philosophy
-> "Chess first. Blockchain where it actually adds value."
+## Overview
 
 Casual chess matches on Castle Black require zero blockchain interactions. When players toggle **Stellar Escrow**, this smart contract locks equal stakes from both players and securely releases the total pot upon authoritative arbiter checkmate/timeout verification.
 

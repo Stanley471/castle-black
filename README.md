@@ -1,8 +1,5 @@
 # 🏰 Castle Black
 
-> **"Chess first. Blockchain where it actually adds value."**
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-amber.svg)](https://opensource.org/licenses/MIT)
 [![Stellar](https://img.shields.io/badge/Network-Stellar_Testnet-08B5E5.svg)](https://stellar.org)
 [![Soroban](https://img.shields.io/badge/Contracts-Soroban_Rust-7D52F4.svg)](https://soroban.stellar.org)
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js_15-black.svg)](https://nextjs.org)
@@ -13,17 +10,17 @@
 
 ---
 
-## 🎯 Problem & Product Philosophy
+## 🎯 Architecture & Design
 
-### The Web3 Gaming Anti-Pattern
-Most Web3 gaming experiences place the blockchain in the way of user enjoyment:
+### Overcoming Web3 Gaming Pitfalls
+Most Web3 gaming experiences introduce friction directly into the gameplay loop:
 - Forcing wallet installation before seeing the board.
 - Requiring blockchain signatures and gas fees for individual moves.
-- Introducing latency and friction into what should be an instantaneous game.
+- Introducing latency and transaction waiting times into an instantaneous game.
 
-### The Castle Black Solution
+### Castle Black Design
 1. **Zero-Friction Casual Play**: No account, no wallet, and no setup required. Two players simply share a **6-character room code** (e.g. `KN7X9P`) to play lightning-fast, real-time chess.
-2. **Blockchain Where It Actually Adds Value**: Stellar and Soroban are used strictly for **optional, trustless wager escrow**:
+2. **Optional Trustless Escrow**: Stellar and Soroban are used for match wagers:
    - Both players deposit equal testnet XLM/tokens into a Soroban smart contract.
    - The authoritative game arbiter cryptographically verifies the match outcome (checkmate, timeout, resignation).
    - The arbiter triggers the Soroban contract to release 100% of the pot directly to the winner's wallet.
@@ -206,5 +203,3 @@ test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
    ```env
    ESCROW_CONTRACT_ID=CA...YOUR_CONTRACT_ID
    ```
-
----
