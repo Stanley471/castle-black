@@ -139,7 +139,7 @@ export default function LobbyPage() {
       <header className="border-b border-zinc-800/80 bg-zinc-900/40 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-zinc-900 border border-amber-500/40 flex items-center justify-center shadow-lg shadow-amber-500/10">
+            <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center">
               <Crown className="w-5 h-5 text-amber-400" />
             </div>
             <div>
@@ -158,9 +158,6 @@ export default function LobbyPage() {
               <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-700/60 rounded-full px-3.5 py-1.5 text-xs">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="font-mono text-zinc-300">{truncateAddress(walletAddress)}</span>
-                <span className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded uppercase font-semibold">
-                  Testnet
-                </span>
               </div>
             ) : (
               <button
@@ -179,14 +176,9 @@ export default function LobbyPage() {
       {/* Hero Section */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8 sm:py-12 flex flex-col items-center">
         <div className="text-center max-w-2xl mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs text-zinc-400 mb-4 shadow-inner">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>Zero accounts required. Peer-to-peer 6-character room codes.</span>
-          </div>
-
           <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-zinc-50 mb-3">
             Chess first. <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500">
+            <span className="text-amber-400">
               Blockchain where it adds value.
             </span>
           </h1>
@@ -248,10 +240,7 @@ export default function LobbyPage() {
                     <Coins className="w-4 h-4 text-amber-400" />
                     <div>
                       <div className="font-medium text-sm text-zinc-200 flex items-center gap-2">
-                        <span>Stellar Soroban Escrow</span>
-                        <span className="text-[10px] bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded uppercase font-mono">
-                          Optional
-                        </span>
+                        <span>Stellar Soroban Escrow (Optional)</span>
                       </div>
                       <p className="text-xs text-zinc-400 mt-0.5">
                         Both players stake XLM. Winner takes the pot on checkmate or timeout.
@@ -323,7 +312,7 @@ export default function LobbyPage() {
             <button
               onClick={handleCreateRoom}
               disabled={isCreating}
-              className="w-full mt-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/20 active:scale-[0.99] cursor-pointer disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-60"
+              className="w-full mt-4 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-60"
             >
               {isCreating ? (
                 <>
