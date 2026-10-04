@@ -177,15 +177,15 @@ export default function LobbyPage() {
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8 sm:py-12 flex flex-col items-center">
         <div className="text-center max-w-2xl mb-10">
           <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-zinc-50 mb-3">
-            Chess first. <br />
+            Real-time chess. <br />
             <span className="text-amber-400">
-              Blockchain where it adds value.
+              Zero setup required.
             </span>
           </h1>
 
           <p className="text-zinc-400 text-sm sm:text-base leading-relaxed">
-            Jump into zero-friction real-time chess with friends in seconds.
-            Optionally enable a testnet XLM escrow wager verified on-chain by the authoritative arbiter.
+            Start a match with a friend in seconds—no accounts or downloads needed. 
+            Want to make it interesting? You can optionally wager test tokens on the game.
           </p>
         </div>
 
