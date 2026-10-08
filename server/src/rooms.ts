@@ -437,7 +437,7 @@ export class RoomManager {
     this.rooms.set(roomId, room);
     this.socketToRoom.set(socketId, roomId);
 
-    return { room, color };
+    return { room, color: color as PieceColor };
   }
 
   public joinRoom(
