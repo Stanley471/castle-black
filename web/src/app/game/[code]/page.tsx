@@ -65,6 +65,7 @@ export default function GameRoomPage() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [showResignModal, setShowResignModal] = useState(false);
   const [gameOverData, setGameOverData] = useState<GameOverPayload | null>(null);
+  const [rematchStatus, setRematchStatus] = useState<'none' | 'requested' | 'incoming' | 'declined'>('none');
   const [rejectedMessage, setRejectedMessage] = useState<string | null>(null);
   const [opponentDisconnected, setOpponentDisconnected] = useState<boolean>(false);
 
@@ -195,6 +196,13 @@ export default function GameRoomPage() {
       setOpponentDisconnected(true);
     });
 
+    // Rematch events
+    socket.on('rematch_requested', () => setRematchStatus('incoming'));
+    socket.on('rematch_accepted', (payload: { newRoomId: string }) => {
+      router.push(`/game/${payload.newRoomId}`);
+    });
+    socket.on('rematch_declined', () => setRematchStatus('declined'));
+
     // Error messages
     socket.on('error_message', (err: { message: string }) => {
       alert(err.message);
@@ -209,6 +217,9 @@ export default function GameRoomPage() {
       socket.off('clock_tick');
       socket.off('game_over');
       socket.off('opponent_disconnected');
+      socket.off('rematch_requested');
+      socket.off('rematch_accepted');
+      socket.off('rematch_declined');
       socket.off('error_message');
     };
   }, [roomCode, router]);
@@ -681,15 +692,53 @@ export default function GameRoomPage() {
             )}
 
             <div className="flex flex-col gap-2">
+              {rematchStatus === 'incoming' && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { getSocket().emit('accept_rematch', { roomId: roomCode }); }}
+                    className="flex-1 py-3 px-4 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl text-xs transition-colors shadow-lg shadow-green-600/20"
+                  >
+                    Accept Rematch
+                  </button>
+                  <button
+                    onClick={() => { getSocket().emit('decline_rematch', { roomId: roomCode }); setRematchStatus('none'); }}
+                    className="py-3 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold rounded-xl text-xs transition-colors"
+                  >
+                    Decline
+                  </button>
+                </div>
+              )}
+              
+              {rematchStatus === 'none' && !wager.enabled && (
+                <button
+                  onClick={() => { getSocket().emit('request_rematch', { roomId: roomCode }); setRematchStatus('requested'); }}
+                  className="w-full py-3 px-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl text-xs transition-colors shadow-lg shadow-amber-600/20"
+                >
+                  Request Rematch
+                </button>
+              )}
+
+              {rematchStatus === 'requested' && (
+                <button disabled className="w-full py-3 px-4 bg-zinc-800 text-zinc-500 font-bold rounded-xl text-xs cursor-not-allowed">
+                  Waiting for opponent...
+                </button>
+              )}
+
+              {rematchStatus === 'declined' && (
+                <button disabled className="w-full py-3 px-4 bg-red-900/50 text-red-400 font-bold rounded-xl text-xs cursor-not-allowed border border-red-500/20">
+                  Rematch Declined
+                </button>
+              )}
+
               <Link
                 href="/"
-                className="w-full py-3 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-bold rounded-xl text-xs transition-all shadow-lg shadow-amber-500/20 text-center"
+                className="w-full py-3 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold rounded-xl text-xs transition-colors text-center"
               >
                 Return to Lobby
               </Link>
               <button
                 onClick={() => setGameOverData(null)}
-                className="w-full py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                className="w-full py-2.5 px-4 bg-transparent hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
               >
                 Review Board
               </button>
