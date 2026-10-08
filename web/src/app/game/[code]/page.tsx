@@ -187,7 +187,22 @@ export default function GameRoomPage() {
     // Game Over
     socket.on('game_over', (payload: GameOverPayload) => {
       setGameOverData(payload);
-      setGameStatus(payload.reason as GameStatus);
+      
+      let mappedStatus: GameStatus;
+      switch (payload.reason) {
+        case 'resignation':
+          mappedStatus = 'resigned';
+          break;
+        case 'fifty_moves':
+        case 'threefold_repetition':
+        case 'insufficient_material':
+          mappedStatus = 'draw';
+          break;
+        default:
+          mappedStatus = payload.reason as GameStatus;
+      }
+      setGameStatus(mappedStatus);
+      
       setFen(payload.fen);
     });
 

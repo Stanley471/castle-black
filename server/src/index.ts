@@ -207,8 +207,7 @@ io.on('connection', (socket: Socket) => {
       // If this move concluded the game (checkmate, stalemate, draw)
       if (result.gameOver) {
         console.log(`[Game] Concluded in room ${room.id}: Winner = ${result.gameOver.winner} (${result.gameOver.reason})`);
-        await processEscrowResolution(room, result.gameOver);
-        io.to(room.id).emit('game_over', result.gameOver);
+        // `room.applyMove()` already calls `onGameOverCallback` which handles escrow and emit.
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error applying move';
@@ -226,8 +225,8 @@ io.on('connection', (socket: Socket) => {
       const gameOverPayload = room.resign(socket.id);
       if (gameOverPayload) {
         console.log(`[Game] Resignation in room ${room.id} by ${socket.id}`);
-        await processEscrowResolution(room, gameOverPayload);
-        io.to(room.id).emit('game_over', gameOverPayload);
+        // `room.resign()` already calls `onGameOverCallback` which handles escrow and emit,
+        // so we don't need to do it again here.
       }
     } catch (err) {
       console.error('[Resign] Error processing resignation:', err);
