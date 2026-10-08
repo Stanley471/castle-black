@@ -278,6 +278,33 @@ io.on('connection', (socket: Socket) => {
     socket.to(roomId).emit('draw_declined');
   });
 
+  // Cancel Match
+  socket.on('cancel_match', (payload: { roomId: string }) => {
+    const { roomId } = payload || {};
+    const room = roomManager.getRoom(roomId);
+    if (!room || room.status !== 'waiting') return;
+
+    // Must be a player in the room
+    if (room.players.w?.socketId !== socket.id && room.players.b?.socketId !== socket.id) return;
+
+    console.log(`[Room] ${roomId} explicitly cancelled by ${socket.id}`);
+    
+    // Process refund
+    if (room.wager.enabled) {
+      const gameOverPayload: GameOverPayload = {
+        roomId: room.id,
+        winner: null,
+        reason: 'abandoned',
+        fen: room.chess.fen()
+      };
+      processEscrowResolution(room, gameOverPayload)
+        .then(() => console.log(`[Escrow] Successfully refunded cancelled room ${roomId}`))
+        .catch(err => console.error(`[Escrow] Failed to refund cancelled room ${roomId}:`, err));
+    }
+
+    roomManager.deleteRoom(roomId);
+  });
+
   // Request Rematch
   socket.on('request_rematch', (payload: { roomId: string }) => {
     const { roomId } = payload || {};
@@ -338,10 +365,23 @@ io.on('connection', (socket: Socket) => {
   // Disconnect Cleanup
   socket.on('disconnect', () => {
     console.log(`[Socket] Disconnected: ${socket.id}`);
-    const { roomId, color, deleted } = roomManager.handleDisconnect(socket.id);
+    const { roomId, color, deleted, room } = roomManager.handleDisconnect(socket.id);
 
-    if (deleted && roomId) {
+    if (deleted && roomId && room) {
       console.log(`[Room] ${roomId} abandoned while waiting; cleaned up.`);
+      
+      // Cancel the escrow so the waiting player gets refunded
+      if (room.wager.enabled) {
+        const payload: GameOverPayload = {
+          roomId: room.id,
+          winner: null,
+          reason: 'abandoned',
+          fen: room.chess.fen()
+        };
+        processEscrowResolution(room, payload)
+          .then(() => console.log(`[Escrow] Successfully refunded abandoned room ${roomId}`))
+          .catch(err => console.error(`[Escrow] Failed to refund abandoned room ${roomId}:`, err));
+      }
     } else if (roomId && color) {
       console.log(`[Room] Player ${color.toUpperCase()} disconnected from room ${roomId}`);
       io.to(roomId).emit('opponent_disconnected', {

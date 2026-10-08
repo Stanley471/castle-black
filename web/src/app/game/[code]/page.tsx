@@ -481,10 +481,24 @@ export default function GameRoomPage() {
 
                 <button
                   onClick={copyInviteLink}
-                  className="flex items-center gap-2 bg-zinc-100 hover:bg-white text-zinc-950 font-semibold px-4 py-2 rounded-lg text-xs transition-all shadow-md active:scale-95 cursor-pointer"
+                  className="flex items-center gap-2 bg-zinc-100 hover:bg-white text-zinc-950 font-semibold px-4 py-2 rounded-lg text-xs transition-all shadow-md active:scale-95 cursor-pointer mb-2"
                 >
                   {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copiedLink ? 'Link Copied to Clipboard!' : 'Copy Invite Link'}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    const socket = getSocket();
+                    if (socket) {
+                      socket.emit('cancel_match', { roomId: roomCode });
+                    }
+                    router.push('/');
+                  }}
+                  className="flex items-center gap-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-semibold px-4 py-2 rounded-lg text-xs transition-all shadow-md active:scale-95 cursor-pointer"
+                >
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span>Cancel Match</span>
                 </button>
               </div>
             )}
