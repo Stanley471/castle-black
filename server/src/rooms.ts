@@ -452,7 +452,9 @@ export class RoomManager {
       return { success: false, error: 'Room code not found' };
     }
 
-    if (room.status !== 'waiting') {
+    const isAlreadyPlayer = room.players.w?.socketId === socketId || room.players.b?.socketId === socketId;
+
+    if (room.status !== 'waiting' && !isAlreadyPlayer) {
       return { success: false, error: 'Room is already in progress or finished' };
     }
 

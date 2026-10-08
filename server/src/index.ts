@@ -152,10 +152,20 @@ io.on('connection', (socket: Socket) => {
       console.log(`[Room] ${socket.id} joined room ${room.id} as ${result.color ? result.color.toUpperCase() : 'SPECTATOR'}`);
 
       if (result.gameReady) {
-        // Both players are present; start authoritative game and clock
-        const startPayload = room.startGame();
-        console.log(`[Game] Started in room ${room.id}! White: ${room.players.w?.socketId} vs Black: ${room.players.b?.socketId}`);
-        io.to(room.id).emit('game_started', startPayload);
+        if (room.status === 'waiting') {
+          // Both players are present; start authoritative game and clock
+          const startPayload = room.startGame();
+          console.log(`[Game] Started in room ${room.id}! White: ${room.players.w?.socketId} vs Black: ${room.players.b?.socketId}`);
+          io.to(room.id).emit('game_started', startPayload);
+        } else {
+          // Game already started, emit current state so they can resync
+          socket.emit('room_joined', {
+            roomId: room.id,
+            color: result.color,
+            isSpectator: !result.color,
+            roomState: room.toState()
+          });
+        }
       } else {
         socket.emit('room_joined', {
           roomId: room.id,
