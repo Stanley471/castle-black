@@ -101,12 +101,27 @@ export class GameRoom {
     socketId: string,
     playerAddress?: string
   ): { color?: PieceColor; gameReady: boolean; error?: string } {
+    // If reconnecting/already in room
     if (this.players.w?.socketId === socketId) {
       return { color: 'w', gameReady: !!this.players.b };
     }
     
     if (this.players.b?.socketId === socketId) {
       return { color: 'b', gameReady: !!this.players.w };
+    }
+
+    // Attempt to match by address for reconnecting players
+    if (playerAddress) {
+      if (this.players.w?.address === playerAddress) {
+        this.players.w.socketId = socketId;
+        this.players.w.connected = true;
+        return { color: 'w', gameReady: !!this.players.b };
+      }
+      if (this.players.b?.address === playerAddress) {
+        this.players.b.socketId = socketId;
+        this.players.b.connected = true;
+        return { color: 'b', gameReady: !!this.players.w };
+      }
     }
 
     if (!this.players.w) {
@@ -135,7 +150,9 @@ export class GameRoom {
       return { color: 'b', gameReady: true };
     }
 
-    return { gameReady: true, error: 'Room is full' };
+    // If room is full, they become a spectator
+    this.spectators.add(socketId);
+    return { gameReady: true }; // No error, they just spectate
   }
 
   public startGame(): GameStartedPayload {
@@ -482,12 +499,6 @@ export class RoomManager {
       return { success: false, error: 'Room code not found' };
     }
 
-    const isAlreadyPlayer = room.players.w?.socketId === socketId || room.players.b?.socketId === socketId;
-
-    if (room.status !== 'waiting' && !isAlreadyPlayer) {
-      return { success: false, error: 'Room is already in progress or finished' };
-    }
-
     const { color, gameReady, error } = room.addPlayer(socketId, playerAddress);
     if (error) {
       return { success: false, error };
@@ -508,7 +519,7 @@ export class RoomManager {
     return this.rooms.get(roomId);
   }
 
-  public handleDisconnect(socketId: string): { roomId?: string; color?: PieceColor; deleted: boolean } {
+  public handleDisconnect(socketId: string): { roomId?: string; color?: PieceColor; deleted: boolean; room?: GameRoom } {
     const roomId = this.socketToRoom.get(socketId);
     if (!roomId) return { deleted: false };
 
@@ -520,10 +531,12 @@ export class RoomManager {
     if (removeRoom) {
       room.stopClockTicker();
       this.rooms.delete(roomId);
-      return { roomId, color, deleted: true };
+      room.status = 'abandoned';
+      room.gameOverReason = 'abandoned';
+      return { roomId, color, deleted: true, room };
     }
 
-    return { roomId, color, deleted: false };
+    return { roomId, color, deleted: false, room };
   }
 
   public deleteRoom(roomId: string): void {
