@@ -17,7 +17,8 @@ import {
   ShieldAlert,
   Trophy,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Handshake
 } from 'lucide-react';
 import { connectSocket, getSocket } from '@/lib/socket';
 import { truncateAddress } from '@/lib/stellar';
@@ -66,6 +67,7 @@ export default function GameRoomPage() {
   const [showResignModal, setShowResignModal] = useState(false);
   const [gameOverData, setGameOverData] = useState<GameOverPayload | null>(null);
   const [rematchStatus, setRematchStatus] = useState<'none' | 'requested' | 'incoming' | 'declined'>('none');
+  const [drawStatus, setDrawStatus] = useState<'none' | 'offered' | 'incoming' | 'declined'>('none');
   const [rejectedMessage, setRejectedMessage] = useState<string | null>(null);
   const [opponentDisconnected, setOpponentDisconnected] = useState<boolean>(false);
 
@@ -163,6 +165,7 @@ export default function GameRoomPage() {
       });
       setHistory((prev) => [...prev, payload.move.san]);
       setRejectedMessage(null);
+      setDrawStatus('none');
     });
 
     // Move rejected by server
@@ -196,6 +199,7 @@ export default function GameRoomPage() {
         case 'fifty_moves':
         case 'threefold_repetition':
         case 'insufficient_material':
+        case 'agreed_draw':
           mappedStatus = 'draw';
           break;
         default:
@@ -218,6 +222,10 @@ export default function GameRoomPage() {
     });
     socket.on('rematch_declined', () => setRematchStatus('declined'));
 
+    // Draw events
+    socket.on('draw_offered', () => setDrawStatus('incoming'));
+    socket.on('draw_declined', () => setDrawStatus('declined'));
+
     // Error messages
     socket.on('error_message', (err: { message: string }) => {
       alert(err.message);
@@ -235,6 +243,8 @@ export default function GameRoomPage() {
       socket.off('rematch_requested');
       socket.off('rematch_accepted');
       socket.off('rematch_declined');
+      socket.off('draw_offered');
+      socket.off('draw_declined');
       socket.off('error_message');
     };
   }, [roomCode, router]);
@@ -603,13 +613,56 @@ export default function GameRoomPage() {
           {/* Actions & Resign */}
           <div className="flex flex-col gap-2">
             {gameStatus === 'in_progress' && myColor && (
-              <button
-                onClick={() => setShowResignModal(true)}
-                className="w-full py-2.5 px-4 bg-zinc-900 hover:bg-rose-950/40 text-zinc-400 hover:text-rose-300 border border-zinc-800 hover:border-rose-800/60 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                <Flag className="w-3.5 h-3.5" />
-                <span>Resign Match</span>
-              </button>
+              <>
+                {drawStatus === 'incoming' && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { getSocket().emit('accept_draw', { roomId: roomCode }); }}
+                      className="flex-1 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-lg shadow-green-600/20"
+                    >
+                      Accept Draw
+                    </button>
+                    <button
+                      onClick={() => { getSocket().emit('decline_draw', { roomId: roomCode }); setDrawStatus('none'); }}
+                      className="flex-1 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      Decline
+                    </button>
+                  </div>
+                )}
+                
+                {drawStatus === 'none' && (
+                  <button
+                    onClick={() => { getSocket().emit('offer_draw', { roomId: roomCode }); setDrawStatus('offered'); }}
+                    className="w-full py-2.5 px-4 bg-zinc-900 hover:bg-amber-950/40 text-zinc-400 hover:text-amber-300 border border-zinc-800 hover:border-amber-800/60 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  >
+                    <Handshake className="w-3.5 h-3.5" />
+                    <span>Offer Draw</span>
+                  </button>
+                )}
+
+                {drawStatus === 'offered' && (
+                  <button disabled className="w-full py-2.5 px-4 bg-zinc-900 text-zinc-500 border border-zinc-800 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 cursor-not-allowed">
+                    <Handshake className="w-3.5 h-3.5" />
+                    <span>Draw Offered...</span>
+                  </button>
+                )}
+
+                {drawStatus === 'declined' && (
+                  <button disabled className="w-full py-2.5 px-4 bg-rose-950/20 text-rose-500 border border-rose-900/30 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 cursor-not-allowed">
+                    <Handshake className="w-3.5 h-3.5" />
+                    <span>Draw Declined</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => setShowResignModal(true)}
+                  className="w-full py-2.5 px-4 bg-zinc-900 hover:bg-rose-950/40 text-zinc-400 hover:text-rose-300 border border-zinc-800 hover:border-rose-800/60 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <Flag className="w-3.5 h-3.5" />
+                  <span>Resign Match</span>
+                </button>
+              </>
             )}
 
             <button
