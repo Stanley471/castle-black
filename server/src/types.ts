@@ -149,3 +149,15 @@ export interface OpponentDisconnectedPayload {
   color: PieceColor;
   gracePeriodSeconds: number;
 }
+
+export interface RequestRematchPayload {
+  roomId: string;
+}
+
+export interface RematchRequestedPayload {}
+
+export interface RematchAcceptedPayload {
+  newRoomId: string;
+}
+
+export interface RematchDeclinedPayload {}
