@@ -234,6 +234,63 @@ io.on('connection', (socket: Socket) => {
     }
   });
 
+  // Request Rematch
+  socket.on('request_rematch', (payload: { roomId: string }) => {
+    const { roomId } = payload || {};
+    const room = roomManager.getRoom(roomId);
+    if (!room || room.status === 'waiting') return;
+
+    const player = room.getPlayerBySocket(socket.id);
+    if (!player) return;
+
+    room.rematchRequests[player.color] = true;
+
+    // Check if both have requested
+    if (room.rematchRequests.w && room.rematchRequests.b) {
+      // Both requested, auto-accept. Swap colors by making previous black the creator.
+      const newRoom = roomManager.createRoom(room.players.b!.socketId, room.initialOptions);
+      newRoom.room.addPlayer(room.players.w!.socketId, room.players.w!.address);
+      
+      io.to(roomId).emit('rematch_accepted', { newRoomId: newRoom.room.id });
+    } else {
+      // Notify the opponent
+      socket.to(roomId).emit('rematch_requested');
+    }
+  });
+
+  // Accept Rematch
+  socket.on('accept_rematch', (payload: { roomId: string }) => {
+    const { roomId } = payload || {};
+    const room = roomManager.getRoom(roomId);
+    if (!room || room.status === 'waiting') return;
+
+    const player = room.getPlayerBySocket(socket.id);
+    if (!player) return;
+
+    room.rematchRequests[player.color] = true;
+
+    if (room.rematchRequests.w && room.rematchRequests.b) {
+      // Both requested, auto-accept. Swap colors by making previous black the creator.
+      const newRoom = roomManager.createRoom(room.players.b!.socketId, room.initialOptions);
+      newRoom.room.addPlayer(room.players.w!.socketId, room.players.w!.address);
+      io.to(roomId).emit('rematch_accepted', { newRoomId: newRoom.room.id });
+    }
+  });
+
+  // Decline Rematch
+  socket.on('decline_rematch', (payload: { roomId: string }) => {
+    const { roomId } = payload || {};
+    const room = roomManager.getRoom(roomId);
+    if (!room) return;
+    
+    const player = room.getPlayerBySocket(socket.id);
+    if (!player) return;
+    
+    room.rematchRequests.w = false;
+    room.rematchRequests.b = false;
+    socket.to(roomId).emit('rematch_declined');
+  });
+
   // Disconnect Cleanup
   socket.on('disconnect', () => {
     console.log(`[Socket] Disconnected: ${socket.id}`);

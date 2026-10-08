@@ -38,6 +38,8 @@ export class GameRoom {
   public gameOverReason?: GameOverReason;
   public readonly createdAt: number = Date.now();
   public escrowTxHash?: string;
+  public rematchRequests: { w: boolean; b: boolean } = { w: false, b: false };
+  public readonly initialOptions?: CreateRoomPayload;
 
   private timerInterval: NodeJS.Timeout | null = null;
   private onClockTickCallback?: (tick: ClockTickPayload) => void;
@@ -50,6 +52,7 @@ export class GameRoom {
     onGameOver?: (payload: GameOverPayload) => void
   ) {
     this.id = id;
+    this.initialOptions = options;
     this.chess = new Chess();
     this.onClockTickCallback = onClockTick;
     this.onGameOverCallback = onGameOver;
