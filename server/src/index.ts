@@ -233,6 +233,51 @@ io.on('connection', (socket: Socket) => {
     }
   });
 
+  // Offer Draw
+  socket.on('offer_draw', (payload: { roomId: string }) => {
+    const { roomId } = payload || {};
+    const room = roomManager.getRoom(roomId);
+    if (!room || room.status !== 'in_progress') return;
+
+    const player = room.getPlayerBySocket(socket.id);
+    if (!player) return;
+
+    room.drawOffer = player.color;
+    socket.to(roomId).emit('draw_offered');
+  });
+
+  // Accept Draw
+  socket.on('accept_draw', (payload: { roomId: string }) => {
+    const { roomId } = payload || {};
+    const room = roomManager.getRoom(roomId);
+    if (!room || room.status !== 'in_progress') return;
+
+    const player = room.getPlayerBySocket(socket.id);
+    if (!player) return;
+
+    // Only the player who didn't offer can accept
+    if (room.drawOffer && room.drawOffer !== player.color) {
+      const gameOverPayload = room.acceptDraw();
+      if (gameOverPayload) {
+        console.log(`[Game] Draw agreed in room ${room.id}`);
+        // `acceptDraw()` calls `onGameOverCallback` which handles escrow and emit
+      }
+    }
+  });
+
+  // Decline Draw
+  socket.on('decline_draw', (payload: { roomId: string }) => {
+    const { roomId } = payload || {};
+    const room = roomManager.getRoom(roomId);
+    if (!room || room.status !== 'in_progress') return;
+
+    const player = room.getPlayerBySocket(socket.id);
+    if (!player) return;
+
+    room.drawOffer = null;
+    socket.to(roomId).emit('draw_declined');
+  });
+
   // Request Rematch
   socket.on('request_rematch', (payload: { roomId: string }) => {
     const { roomId } = payload || {};

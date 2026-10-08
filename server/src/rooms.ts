@@ -39,6 +39,7 @@ export class GameRoom {
   public readonly createdAt: number = Date.now();
   public escrowTxHash?: string;
   public rematchRequests: { w: boolean; b: boolean } = { w: false, b: false };
+  public drawOffer: PieceColor | null = null;
   public readonly initialOptions?: CreateRoomPayload;
 
   private timerInterval: NodeJS.Timeout | null = null;
@@ -181,6 +182,9 @@ export class GameRoom {
       return { success: false, error: `It is not your turn (${currentTurn.toUpperCase()} to move)` };
     }
 
+    // Clear any pending draw offer when a move is made
+    this.drawOffer = null;
+
     const now = Date.now();
     const elapsed = this.clock.lastMoveTimestamp ? now - this.clock.lastMoveTimestamp : 0;
 
@@ -294,6 +298,29 @@ export class GameRoom {
       roomId: this.id,
       winner: this.winner,
       reason: 'resignation',
+      fen: this.chess.fen()
+    };
+
+    if (this.onGameOverCallback) {
+      this.onGameOverCallback(payload);
+    }
+
+    return payload;
+  }
+
+  public acceptDraw(): GameOverPayload | null {
+    if (this.status !== 'in_progress' || !this.drawOffer) return null;
+
+    this.stopClockTicker();
+    this.status = 'draw';
+    this.winner = 'draw';
+    this.gameOverReason = 'agreed_draw';
+    this.drawOffer = null;
+
+    const payload: GameOverPayload = {
+      roomId: this.id,
+      winner: this.winner,
+      reason: 'agreed_draw',
       fen: this.chess.fen()
     };
 
