@@ -96,7 +96,15 @@ export class GameRoom {
   public addPlayer(
     socketId: string,
     playerAddress?: string
-  ): { color: PieceColor; gameReady: boolean } {
+  ): { color?: PieceColor; gameReady: boolean; error?: string } {
+    if (this.players.w?.socketId === socketId) {
+      return { color: 'w', gameReady: !!this.players.b };
+    }
+    
+    if (this.players.b?.socketId === socketId) {
+      return { color: 'b', gameReady: !!this.players.w };
+    }
+
     if (!this.players.w) {
       this.players.w = {
         socketId,
@@ -123,9 +131,7 @@ export class GameRoom {
       return { color: 'b', gameReady: true };
     }
 
-    // Both player slots are occupied; join as spectator
-    this.spectators.add(socketId);
-    return { color: 'w', gameReady: false };
+    return { gameReady: true, error: 'Room is full' };
   }
 
   public startGame(): GameStartedPayload {
@@ -447,13 +453,14 @@ export class RoomManager {
     }
 
     if (room.status !== 'waiting') {
-      // Allow spectator join
-      room.spectators.add(socketId);
-      this.socketToRoom.set(socketId, cleanId);
-      return { success: true, room, gameReady: false };
+      return { success: false, error: 'Room is already in progress or finished' };
     }
 
-    const { color, gameReady } = room.addPlayer(socketId, playerAddress);
+    const { color, gameReady, error } = room.addPlayer(socketId, playerAddress);
+    if (error) {
+      return { success: false, error };
+    }
+    
     this.socketToRoom.set(socketId, cleanId);
 
     return { success: true, room, color, gameReady };
