@@ -18,7 +18,8 @@ export type GameOverReason =
   | 'fifty_moves'
   | 'timeout'
   | 'resignation'
-  | 'abandoned';
+  | 'abandoned'
+  | 'agreed_draw';
 
 export interface Player {
   socketId: string;
@@ -159,3 +160,19 @@ export interface RematchAcceptedPayload {
 }
 
 export interface RematchDeclinedPayload {}
+
+export interface OfferDrawPayload {
+  roomId: string;
+}
+
+export interface DrawOfferedPayload {}
+
+export interface AcceptDrawPayload {
+  roomId: string;
+}
+
+export interface DeclineDrawPayload {
+  roomId: string;
+}
+
+export interface DrawDeclinedPayload {}
