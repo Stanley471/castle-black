@@ -1,0 +1,44 @@
+name: Feature Request
+description: Suggest an idea for Castle Black
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem the feature solves
+      description: Is your feature request related to a problem? Please describe.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the solution you'd like.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: How should the feature work once implemented?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected project area
+      options:
+        - frontend
+        - backend
+        - realtime multiplayer
+        - chess logic
+        - Soroban contract
+        - documentation
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe any alternative solutions or features you've considered.
