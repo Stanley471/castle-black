@@ -153,10 +153,27 @@ io.on('connection', (socket: Socket) => {
 
       if (result.gameReady) {
         if (room.status === 'waiting') {
-          // Both players are present; start authoritative game and clock
-          const startPayload = room.startGame();
-          console.log(`[Game] Started in room ${room.id}! White: ${room.players.w?.socketId} vs Black: ${room.players.b?.socketId}`);
-          io.to(room.id).emit('game_started', startPayload);
+          if (room.wager.enabled) {
+            room.status = 'depositing';
+            io.to(room.id).emit('room_joined', {
+              roomId: room.id,
+              color: result.color,
+              isSpectator: !result.color,
+              roomState: room.toState()
+            });
+            // Re-emit room_joined for the other player so they know we transitioned to depositing
+            socket.to(room.id).emit('room_joined', {
+              roomId: room.id,
+              color: result.color === 'w' ? 'b' : 'w',
+              isSpectator: false,
+              roomState: room.toState()
+            });
+          } else {
+            // Both players are present; start authoritative game and clock
+            const startPayload = room.startGame();
+            console.log(`[Game] Started in room ${room.id}! White: ${room.players.w?.socketId} vs Black: ${room.players.b?.socketId}`);
+            io.to(room.id).emit('game_started', startPayload);
+          }
         } else {
           // Game already started, emit current state so they can resync
           socket.emit('room_joined', {
@@ -176,6 +193,36 @@ io.on('connection', (socket: Socket) => {
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error joining room';
+      socket.emit('error_message', { message });
+    }
+  });
+
+  // Deposit Wager
+  socket.on('deposit_wager', async (payload: { roomId: string; txHash: string }) => {
+    try {
+      const { roomId, txHash } = payload || {};
+      const room = roomManager.getRoom(roomId);
+      
+      if (!room || room.status !== 'depositing') {
+        socket.emit('error_message', { message: 'Room not found or not in depositing state' });
+        return;
+      }
+
+      const player = room.getPlayerBySocket(socket.id);
+      if (!player) return;
+
+      player.deposited = true;
+      console.log(`[Escrow] Player ${player.color.toUpperCase()} deposited for room ${room.id} (tx: ${txHash})`);
+      
+      io.to(room.id).emit('player_deposited', { roomId: room.id, color: player.color });
+
+      if (room.players.w?.deposited && room.players.b?.deposited) {
+        console.log(`[Escrow] Both players deposited for room ${room.id}. Starting game.`);
+        const startPayload = room.startGame();
+        io.to(room.id).emit('game_started', startPayload);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error depositing wager';
       socket.emit('error_message', { message });
     }
   });
