@@ -5,16 +5,13 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Chessboard } from 'react-chessboard';
 import {
-  Crown,
   Clock,
   Coins,
   Copy,
   Check,
   Flag,
   ArrowLeft,
-  RotateCcw,
   ExternalLink,
-  ShieldAlert,
   Trophy,
   Loader2,
   AlertCircle,
@@ -23,10 +20,8 @@ import {
 import { connectSocket, getSocket } from '@/lib/socket';
 import { truncateAddress } from '@/lib/stellar';
 import {
-  ClockState,
   ClockTickPayload,
   GameOverPayload,
-  GameOverReason,
   GameStartedPayload,
   GameStatus,
   MoveAppliedPayload,

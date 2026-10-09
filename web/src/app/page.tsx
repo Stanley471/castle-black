@@ -1,20 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Crown,
   Shield,
-  Clock,
   Coins,
   ArrowRight,
-  Copy,
   Check,
   ExternalLink,
   Wallet,
-  Sparkles,
   Zap,
-  Info,
   Loader2,
   AlertCircle
 } from 'lucide-react';

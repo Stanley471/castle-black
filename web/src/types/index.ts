@@ -164,19 +164,19 @@ export interface RequestRematchPayload {
   roomId: string;
 }
 
-export interface RematchRequestedPayload {}
+export type RematchRequestedPayload = Record<string, never>;
 
 export interface RematchAcceptedPayload {
   newRoomId: string;
 }
 
-export interface RematchDeclinedPayload {}
+export type RematchDeclinedPayload = Record<string, never>;
 
 export interface OfferDrawPayload {
   roomId: string;
 }
 
-export interface DrawOfferedPayload {}
+export type DrawOfferedPayload = Record<string, never>;
 
 export interface AcceptDrawPayload {
   roomId: string;
@@ -186,4 +186,4 @@ export interface DeclineDrawPayload {
   roomId: string;
 }
 
-export interface DrawDeclinedPayload {}
+export type DrawDeclinedPayload = Record<string, never>;
