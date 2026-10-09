@@ -132,8 +132,8 @@ export default function GameRoomPage() {
     amount: '0',
     asset: 'XLM'
   });
-  const [whitePlayer, setWhitePlayer] = useState<{ id: string; address?: string } | null>(null);
-  const [blackPlayer, setBlackPlayer] = useState<{ id: string; address?: string } | null>(null);
+  const [whitePlayer, setWhitePlayer] = useState<{ id: string; address?: string; deposited?: boolean } | null>(null);
+  const [blackPlayer, setBlackPlayer] = useState<{ id: string; address?: string; deposited?: boolean } | null>(null);
 
   // UI State
   const [copiedLink, setCopiedLink] = useState(false);
@@ -187,13 +187,15 @@ export default function GameRoomPage() {
           if (data.roomState.players.w) {
             setWhitePlayer({
               id: data.roomState.players.w.socketId,
-              address: data.roomState.players.w.address
+              address: data.roomState.players.w.address,
+              deposited: data.roomState.players.w.deposited
             });
           }
           if (data.roomState.players.b) {
             setBlackPlayer({
               id: data.roomState.players.b.socketId,
-              address: data.roomState.players.b.address
+              address: data.roomState.players.b.address,
+              deposited: data.roomState.players.b.deposited
             });
           }
         }
@@ -212,11 +214,13 @@ export default function GameRoomPage() {
       setWager(payload.wager);
       setWhitePlayer({
         id: payload.whiteSocketId,
-        address: payload.whiteAddress
+        address: payload.whiteAddress,
+        deposited: true
       });
       setBlackPlayer({
         id: payload.blackSocketId,
-        address: payload.blackAddress
+        address: payload.blackAddress,
+        deposited: true
       });
 
       // Determine local color assignment if not set
@@ -224,6 +228,15 @@ export default function GameRoomPage() {
         setMyColor('w');
       } else if (socket.id === payload.blackSocketId) {
         setMyColor('b');
+      }
+    });
+
+    // Player Deposited
+    socket.on('player_deposited', (payload: { roomId: string; color: PieceColor }) => {
+      if (payload.color === 'w') {
+        setWhitePlayer((prev) => (prev ? { ...prev, deposited: true } : prev));
+      } else {
+        setBlackPlayer((prev) => (prev ? { ...prev, deposited: true } : prev));
       }
     });
 
@@ -319,6 +332,7 @@ export default function GameRoomPage() {
       socket.off('draw_offered');
       socket.off('draw_declined');
       socket.off('error_message');
+      socket.off('player_deposited');
     };
   }, [roomCode, router]);
 
@@ -597,6 +611,70 @@ export default function GameRoomPage() {
                 </button>
               </div>
             )}
+
+            {/* Depositing Wager Overlay */}
+            {gameStatus === 'depositing' && (
+              <div className="absolute inset-0 bg-zinc-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-30">
+                <div className="w-16 h-16 rounded-full bg-amber-500/15 border border-amber-500/40 flex items-center justify-center mb-6">
+                  <Coins className="w-8 h-8 text-amber-400" />
+                </div>
+                <h3 className="text-2xl font-black text-zinc-100 mb-2 tracking-tight">Escrow Deposit Required</h3>
+                <p className="text-sm text-zinc-400 max-w-sm mb-8 leading-relaxed">
+                  Both players must deposit {wager.amount} XLM into the Soroban escrow contract before the match can begin.
+                </p>
+
+                <div className="w-full max-w-sm space-y-4 mb-8">
+                  {/* My Status */}
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-3 h-3 rounded-full ${myPlayer?.deposited ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-amber-500 animate-pulse'}`} />
+                      <span className="font-semibold text-zinc-200">You ({myColor === 'w' ? 'White' : 'Black'})</span>
+                    </div>
+                    {myPlayer?.deposited ? (
+                      <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md">Deposited</span>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          const socket = getSocket();
+                          if (socket) {
+                            socket.emit('deposit_wager', { roomId: roomCode, txHash: 'simulated_tx_hash_' + Date.now() });
+                          }
+                        }}
+                        className="text-xs font-bold bg-amber-500 hover:bg-amber-400 text-zinc-950 px-4 py-1.5 rounded-lg transition-colors cursor-pointer shadow-md active:scale-95"
+                      >
+                        Deposit {wager.amount} XLM
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Opponent Status */}
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-3 h-3 rounded-full ${opponentPlayer?.deposited ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-zinc-600'}`} />
+                      <span className="font-semibold text-zinc-200">Opponent ({opponentColor === 'w' ? 'White' : 'Black'})</span>
+                    </div>
+                    {opponentPlayer?.deposited ? (
+                      <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md">Deposited</span>
+                    ) : (
+                      <span className="text-xs font-medium text-zinc-500">Waiting...</span>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    const socket = getSocket();
+                    if (socket) {
+                      socket.emit('cancel_match', { roomId: roomCode });
+                    }
+                    router.push('/');
+                  }}
+                  className="text-xs text-zinc-500 hover:text-rose-400 transition-colors underline underline-offset-4 cursor-pointer"
+                >
+                  Cancel Match & Refund
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Player (Self) Card (Bottom) */}
@@ -670,7 +748,7 @@ export default function GameRoomPage() {
                   className={`w-2.5 h-2.5 rounded-full ${
                     gameStatus === 'in_progress'
                       ? 'bg-emerald-400 animate-pulse'
-                      : gameStatus === 'waiting'
+                      : (gameStatus === 'waiting' || gameStatus === 'depositing')
                       ? 'bg-amber-400 animate-bounce'
                       : 'bg-zinc-500'
                   }`}

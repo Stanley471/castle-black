@@ -2,6 +2,7 @@ export type PieceColor = 'w' | 'b';
 
 export type GameStatus =
   | 'waiting'
+  | 'depositing'
   | 'in_progress'
   | 'checkmate'
   | 'stalemate'
@@ -93,6 +94,11 @@ export interface ResignPayload {
   roomId: string;
 }
 
+export interface DepositWagerPayload {
+  roomId: string;
+  txHash: string;
+}
+
 export interface RoomCreatedPayload {
   roomId: string;
   color: PieceColor;
@@ -109,6 +115,11 @@ export interface GameStartedPayload {
   clock: ClockState;
   turn: PieceColor;
   wager: WagerConfig;
+}
+
+export interface PlayerDepositedPayload {
+  roomId: string;
+  color: PieceColor;
 }
 
 export interface MoveAppliedPayload {
