@@ -1,0 +1,71 @@
+name: Bug Report
+description: File a bug report for Castle Black
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! Please do not disclose any sensitive information such as seed phrases, private keys, or wallet credentials.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Bug summary
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Steps to reproduce the behavior.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      description: Which part of the project is affected?
+      options:
+        - frontend
+        - backend
+        - realtime multiplayer
+        - chess logic
+        - Soroban contract
+        - documentation
+    validations:
+      required: true
+  - type: textarea
+    id: multiplayer
+    attributes:
+      label: Multiplayer / Game Flow Details
+      description: If this is a multiplayer bug, what was the game flow? Does it affect the creator, the joining player, or both?
+  - type: input
+    id: environment
+    attributes:
+      label: Browser / Environment
+      description: e.g., Chrome 120, Firefox, Node version, etc.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or screenshots
+      description: Please paste any relevant logs, error messages, or screenshots here.
