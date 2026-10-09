@@ -1,8 +1,7 @@
 #![no_std]
 
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype,
-    token, Address, Env, Symbol,
+    contract, contracterror, contractimpl, contracttype, token, Address, Env, Symbol,
 };
 
 #[contracterror]
@@ -92,11 +91,7 @@ impl EscrowContract {
 
     /// Opponent joins an existing game, depositing an equal stake amount.
     /// Transitions state from `WaitingForOpponent` to `Active`.
-    pub fn join_game(
-        env: Env,
-        game_id: Symbol,
-        opponent: Address,
-    ) -> Result<(), EscrowError> {
+    pub fn join_game(env: Env, game_id: Symbol, opponent: Address) -> Result<(), EscrowError> {
         opponent.require_auth();
 
         let key = DataKey::Game(game_id);
@@ -116,7 +111,11 @@ impl EscrowContract {
 
         // Lock matching stake from opponent into escrow contract
         let token_client = token::Client::new(&env, &game.token);
-        token_client.transfer(&opponent, &env.current_contract_address(), &game.stake_amount);
+        token_client.transfer(
+            &opponent,
+            &env.current_contract_address(),
+            &game.stake_amount,
+        );
 
         game.player_b = Some(opponent);
         game.state = GameState::Active;
@@ -127,11 +126,7 @@ impl EscrowContract {
 
     /// Authoritative resolution invoked exclusively by the designated arbiter.
     /// Releases the total pot (`stake_amount * 2`) to the verified winner.
-    pub fn resolve_game(
-        env: Env,
-        game_id: Symbol,
-        winner: Address,
-    ) -> Result<(), EscrowError> {
+    pub fn resolve_game(env: Env, game_id: Symbol, winner: Address) -> Result<(), EscrowError> {
         let key = DataKey::Game(game_id);
         let mut game: Game = env
             .storage()
@@ -146,7 +141,10 @@ impl EscrowContract {
         // Must be authorized by the trusted game arbiter
         game.arbiter.require_auth();
 
-        let player_b = game.player_b.as_ref().ok_or(EscrowError::InvalidGameState)?;
+        let player_b = game
+            .player_b
+            .as_ref()
+            .ok_or(EscrowError::InvalidGameState)?;
 
         // Winner must be either player_w or player_b
         if winner != game.player_w && &winner != player_b {
@@ -171,10 +169,7 @@ impl EscrowContract {
 
     /// Cancels a match if an opponent has not yet joined.
     /// Refunds the original stake to the creator.
-    pub fn cancel_game(
-        env: Env,
-        game_id: Symbol,
-    ) -> Result<(), EscrowError> {
+    pub fn cancel_game(env: Env, game_id: Symbol) -> Result<(), EscrowError> {
         let key = DataKey::Game(game_id);
         let mut game: Game = env
             .storage()
@@ -191,7 +186,11 @@ impl EscrowContract {
 
         // Refund creator
         let token_client = token::Client::new(&env, &game.token);
-        token_client.transfer(&env.current_contract_address(), &game.player_w, &game.stake_amount);
+        token_client.transfer(
+            &env.current_contract_address(),
+            &game.player_w,
+            &game.stake_amount,
+        );
 
         game.state = GameState::Cancelled;
         env.storage().persistent().set(&key, &game);
@@ -201,7 +200,10 @@ impl EscrowContract {
     /// Read game details for client/arbiter verification.
     pub fn get_game(env: Env, game_id: Symbol) -> Result<Game, EscrowError> {
         let key = DataKey::Game(game_id);
-        env.storage().persistent().get(&key).ok_or(EscrowError::GameNotFound)
+        env.storage()
+            .persistent()
+            .get(&key)
+            .ok_or(EscrowError::GameNotFound)
     }
 }
 
@@ -209,12 +211,16 @@ impl EscrowContract {
 mod test {
     use super::*;
     use soroban_sdk::{
+        symbol_short,
         testutils::Address as _,
         token::{Client as TokenClient, StellarAssetClient},
-        symbol_short, Address, Env,
+        Address, Env,
     };
 
-    fn create_test_token<'a>(env: &Env, admin: &Address) -> (TokenClient<'a>, StellarAssetClient<'a>) {
+    fn create_test_token<'a>(
+        env: &Env,
+        admin: &Address,
+    ) -> (TokenClient<'a>, StellarAssetClient<'a>) {
         let contract_address = env.register_stellar_asset_contract_v2(admin.clone());
         (
             TokenClient::new(env, &contract_address.address()),
@@ -249,7 +255,13 @@ mod test {
         let game_id = symbol_short!("GAME01");
 
         // 1. Creator creates game
-        client.create_game(&game_id, &player_w, &arbiter, &token_client.address, &stake_amount);
+        client.create_game(
+            &game_id,
+            &player_w,
+            &arbiter,
+            &token_client.address,
+            &stake_amount,
+        );
 
         assert_eq!(token_client.balance(&player_w), 400);
         assert_eq!(token_client.balance(&contract_id), 100);
@@ -301,7 +313,13 @@ mod test {
         let game_id = symbol_short!("CANCEL1");
 
         // 1. Create game
-        client.create_game(&game_id, &player_w, &arbiter, &token_client.address, &stake_amount);
+        client.create_game(
+            &game_id,
+            &player_w,
+            &arbiter,
+            &token_client.address,
+            &stake_amount,
+        );
         assert_eq!(token_client.balance(&player_w), 150);
         assert_eq!(token_client.balance(&contract_id), 50);
 
