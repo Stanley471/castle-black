@@ -35,6 +35,79 @@ import {
   WagerConfig
 } from '@/types';
 
+const INITIAL_COUNTS: Record<string, number> = {
+  p: 8, n: 2, b: 2, r: 2, q: 1,
+  P: 8, N: 2, B: 2, R: 2, Q: 1
+};
+
+const PIECE_VALUES: Record<string, number> = {
+  p: 1, n: 3, b: 3, r: 5, q: 9,
+  P: 1, N: 3, B: 3, R: 5, Q: 9
+};
+
+function getCapturedPieces(fen: string) {
+  const pieces = fen.split(' ')[0];
+  const counts: Record<string, number> = {
+    P: 0, N: 0, B: 0, R: 0, Q: 0,
+    p: 0, n: 0, b: 0, r: 0, q: 0
+  };
+  
+  if (!pieces) return { capturedWhite: [], capturedBlack: [], scoreDiff: 0 };
+
+  for (const char of pieces) {
+    if (counts[char] !== undefined) {
+      counts[char]++;
+    }
+  }
+
+  const capturedWhite: string[] = [];
+  const capturedBlack: string[] = [];
+
+  for (const p of ['Q', 'R', 'B', 'N', 'P']) {
+    const diff = INITIAL_COUNTS[p]! - counts[p]!;
+    for (let i = 0; i < diff; i++) capturedWhite.push(p);
+  }
+
+  for (const p of ['q', 'r', 'b', 'n', 'p']) {
+    const diff = INITIAL_COUNTS[p]! - counts[p]!;
+    for (let i = 0; i < diff; i++) capturedBlack.push(p);
+  }
+
+  let whiteScore = 0;
+  let blackScore = 0;
+  for (const char of pieces) {
+    if (PIECE_VALUES[char]) {
+      if (char === char.toUpperCase()) whiteScore += PIECE_VALUES[char]!;
+      else blackScore += PIECE_VALUES[char]!;
+    }
+  }
+
+  return {
+    capturedWhite,
+    capturedBlack,
+    scoreDiff: whiteScore - blackScore
+  };
+}
+
+const PieceIcon = ({ piece }: { piece: string }) => {
+  const type = piece.toLowerCase();
+  const isWhite = piece === piece.toUpperCase();
+  const map: Record<string, string> = {
+    p: '♟', n: '♞', b: '♝', r: '♜', q: '♛'
+  };
+  return (
+    <span 
+      className={`text-[20px] leading-none select-none -ml-1.5 first:ml-0 ${
+        isWhite 
+          ? 'text-zinc-100 [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]' 
+          : 'text-zinc-950 [text-shadow:0_1px_1px_rgba(255,255,255,0.4)]'
+      }`}
+    >
+      {map[type]}
+    </span>
+  );
+};
+
 const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 export default function GameRoomPage() {
@@ -324,6 +397,14 @@ export default function GameRoomPage() {
   const opponentPlayer = opponentColor === 'w' ? whitePlayer : blackPlayer;
   const myPlayer = myColor === 'b' ? blackPlayer : whitePlayer;
 
+  // Captured pieces and advantage
+  const { capturedWhite, capturedBlack, scoreDiff } = getCapturedPieces(fen);
+  const opponentCapturedPieces = opponentColor === 'w' ? capturedBlack : capturedWhite;
+  const opponentScoreAdvantage = opponentColor === 'w' ? scoreDiff : -scoreDiff;
+  
+  const myCapturedPieces = myColor === 'w' ? capturedBlack : capturedWhite;
+  const myScoreAdvantage = myColor === 'w' ? scoreDiff : -scoreDiff;
+
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-zinc-950 text-zinc-100">
       {/* Top Header */}
@@ -402,23 +483,37 @@ export default function GameRoomPage() {
                 : 'border-zinc-800'
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <div
-                className={`w-4 h-4 rounded-full ${
-                  opponentColor === 'w' ? 'bg-zinc-100 border border-zinc-400' : 'bg-zinc-900 border border-zinc-500'
-                }`}
-              />
-              <div>
-                <div className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
-                  <span>Opponent ({opponentColor === 'w' ? 'White' : 'Black'})</span>
-                  {turn === opponentColor && gameStatus === 'in_progress' && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-                  )}
-                </div>
-                <div className="text-[11px] text-zinc-500 font-mono">
-                  {opponentPlayer?.address ? truncateAddress(opponentPlayer.address) : opponentPlayer?.id || 'Waiting...'}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className={`w-4 h-4 rounded-full ${
+                    opponentColor === 'w' ? 'bg-zinc-100 border border-zinc-400' : 'bg-zinc-900 border border-zinc-500'
+                  }`}
+                />
+                <div>
+                  <div className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
+                    <span>Opponent ({opponentColor === 'w' ? 'White' : 'Black'})</span>
+                    {turn === opponentColor && gameStatus === 'in_progress' && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                    )}
+                  </div>
+                  <div className="text-[11px] text-zinc-500 font-mono">
+                    {opponentPlayer?.address ? truncateAddress(opponentPlayer.address) : opponentPlayer?.id || 'Waiting...'}
+                  </div>
                 </div>
               </div>
+              
+              {/* Opponent Captured Pieces */}
+              {(opponentCapturedPieces.length > 0 || opponentScoreAdvantage > 0) && (
+                <div className="flex items-center ml-[26px]">
+                  {opponentCapturedPieces.map((p, i) => (
+                    <PieceIcon key={i} piece={p} />
+                  ))}
+                  {opponentScoreAdvantage > 0 && (
+                    <span className="text-[11px] font-bold text-zinc-400 ml-2 pt-0.5">+{opponentScoreAdvantage}</span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Opponent Clock */}
@@ -512,23 +607,37 @@ export default function GameRoomPage() {
                 : 'border-zinc-800'
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <div
-                className={`w-4 h-4 rounded-full ${
-                  myColor === 'w' ? 'bg-zinc-100 border border-zinc-400' : 'bg-zinc-900 border border-zinc-500'
-                }`}
-              />
-              <div>
-                <div className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
-                  <span>You ({myColor === 'w' ? 'White' : 'Black'})</span>
-                  {turn === myColor && gameStatus === 'in_progress' && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  )}
-                </div>
-                <div className="text-[11px] text-zinc-500 font-mono">
-                  {myPlayer?.address ? truncateAddress(myPlayer.address) : myPlayer?.id || 'Connected'}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className={`w-4 h-4 rounded-full ${
+                    myColor === 'w' ? 'bg-zinc-100 border border-zinc-400' : 'bg-zinc-900 border border-zinc-500'
+                  }`}
+                />
+                <div>
+                  <div className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
+                    <span>You ({myColor === 'w' ? 'White' : 'Black'})</span>
+                    {turn === myColor && gameStatus === 'in_progress' && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                    )}
+                  </div>
+                  <div className="text-[11px] text-zinc-500 font-mono">
+                    {myPlayer?.address ? truncateAddress(myPlayer.address) : myPlayer?.id || 'Connected'}
+                  </div>
                 </div>
               </div>
+
+              {/* Self Captured Pieces */}
+              {(myCapturedPieces.length > 0 || myScoreAdvantage > 0) && (
+                <div className="flex items-center ml-[26px]">
+                  {myCapturedPieces.map((p, i) => (
+                    <PieceIcon key={i} piece={p} />
+                  ))}
+                  {myScoreAdvantage > 0 && (
+                    <span className="text-[11px] font-bold text-zinc-400 ml-2 pt-0.5">+{myScoreAdvantage}</span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Self Clock */}
